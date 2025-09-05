@@ -1,0 +1,138 @@
+# Values для External Secrets Operator с Servercore Webhook Sidecar
+# Используйте с официальным chart: external-secrets/external-secrets
+
+# Основные настройки ESO
+replicaCount: 1
+image:
+  repository: ghcr.io/external-secrets/external-secrets
+  tag: "v0.19.2"
+  pullPolicy: IfNotPresent
+
+# Servercore Webhook sidecar
+extraContainers:
+  - name: servercore-webhook-sidecar
+    image: ghcr.io/coldsummerstape/servercore-eso-webhook:1.0.0
+    imagePullPolicy: Always
+    ports:
+      - name: webhook
+        containerPort: 8081
+        protocol: TCP
+    env:
+      - name: SERVERCORE_API_URL
+        value: "https://cloud.api.selcloud.ru/secrets-manager/v1"
+      - name: SERVERCORE_AUTH_URL
+        value: "https://cloud.api.servercore.com/identity/v3/auth/tokens"
+      - name: SERVERCORE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: servercore-credentials
+            key: username
+      - name: SERVERCORE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: servercore-credentials
+            key: password
+      - name: SERVERCORE_DOMAIN_NAME
+        valueFrom:
+          secretKeyRef:
+            name: servercore-credentials
+            key: domain
+      - name: SERVERCORE_PROJECT_NAME
+        valueFrom:
+          secretKeyRef:
+            name: servercore-credentials
+            key: project
+      - name: LOG_LEVEL
+        value: "info"
+      - name: TIMEOUT
+        value: "30s"
+      - name: MAX_RETRIES
+        value: "3"
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: 8081
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 8081
+      initialDelaySeconds: 10
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 5
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+      runAsUser: 1000
+      seccompProfile:
+        type: RuntimeDefault
+
+# Webhook configuration
+webhook:
+  enabled: true
+  port: 9443
+  # Disable webhook TLS validation for sidecar communication
+  tls:
+    enabled: false
+  # Configure webhook to use HTTP for sidecar communication
+  certDir: "/tmp/certs"
+  certName: "tls.crt"
+  keyName: "tls.key"
+  caBundle: ""
+
+# Disable webhook validation to prevent TLS certificate issues
+webhookValidation:
+  enabled: false
+
+# Ресурсы для основного контейнера ESO
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Безопасность
+podSecurityContext:
+  enabled: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  enabled: true
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+# Мониторинг
+metrics:
+  service:
+    enabled: true
+    port: 8080
+
+# Логирование
+log:
+  level: info
+  timeEncoding: epoch

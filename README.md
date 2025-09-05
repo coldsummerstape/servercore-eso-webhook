@@ -135,7 +135,7 @@ spec:
 ### Docker Images
 
 - `ghcr.io/coldsummerstape/servercore-eso-webhook:latest` - latest version
-- `ghcr.io/coldsummerstape/servercore-eso-webhook:v1.5` - specific version
+- `ghcr.io/coldsummerstape/servercore-eso-webhook:v1.0.0` - specific version
 
 ## 🏗️ Architecture
 
@@ -155,8 +155,6 @@ ESO → Webhook Sidecar → Servercore API
 1. **JSON in Servercore**: Insert JSON directly in the "Value" field - no encoding needed
 2. **Field names**: Use exact field names from JSON in ExternalSecret
 3. **Secret updates**: ESO automatically updates secrets according to `refreshInterval`
-4. **Security**: Servercore credentials are stored in Kubernetes Secret
-5. **Webhook URL**: Use correct Service URL: `http://external-secrets-webhook.external-secrets-system.svc.cluster.local:8081/webhook`
 6. **Domain and project in Servercore**: 
    - `domain` - **number in the top right corner** next to "account"
    - `project` - **project name** (not ID!)
